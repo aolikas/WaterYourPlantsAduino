@@ -29,6 +29,9 @@ These Arduino sketches are a part of the IoT project - Water Your Plants. This p
       - DallasTemperature.h
    2. In a sketch fill int AirValue and int WaterValue with your values from calibration.  
    3. Fill with your values Wifi auth.
-   4. fill with your values Firebase Host and Auth. More detailed [here.](https://create.arduino.cc/projecthub/pulasthi-nanayakkara/connecting-esp8266-to-firebase-to-send-receive-data-4adf66)
-   5. 
+   4. Fill with your values Firebase Host and Auth. More detailed [here.](https://create.arduino.cc/projecthub/pulasthi-nanayakkara/connecting-esp8266-to-firebase-to-send-receive-data-4adf66)
+   5. Next fill userId. In your WaterYourPlants App, in a menu click on Account Details. There you can find user id.
+     <img src="https://github.com/aolikas/WaterYourPlantsAduino/blob/main/Screenshot/Screenshot_user_id.png" width="300" height="200">
+   6. Next fill sensorId. In your WaterYourPlants App create a Sensor, then click on a Sensor card. There you can find user id.
+     <img src="https://github.com/aolikas/WaterYourPlantsAduino/blob/main/Screenshot/Screenshot_sensor_id.png" width="300" height="200">
   
