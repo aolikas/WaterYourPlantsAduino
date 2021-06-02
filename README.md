@@ -13,3 +13,5 @@ These Arduino sketches are a part of the IoT project - Water Your Plants. This p
 3. Download the sample.
 
 # SoilMoistureTemperatureSensors
+  Hardware:
+  1. Capacitive moisture sensor. It's better to calibrate it before use.
