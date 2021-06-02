@@ -14,23 +14,25 @@ float soilTempValue = 0;
 #define MOISTURE_PIN A0
 int soilMoistureValue = 0;
 
-const int AirValue = 860;
-const int WaterValue = 450;
+// moisture sensor dry value
+const int AirValue = 627;  //put your own value
+// moisture sensor wet value
+const int WaterValue = 292; //put your own value
 int intervals = (AirValue - WaterValue) / 3;
 
 // WiFi auth
-#define WIFI_SSID ""
-#define WIFI_PASSWORD ""
+#define WIFI_SSID ""   //your Wifi name
+#define WIFI_PASSWORD ""  // your password
 
 // Firebase auth
-#define FIREBASE_HOST ""
-#define FIREBASE_AUTH ""
+#define FIREBASE_HOST "" //example.firebaseio.com
+#define FIREBASE_AUTH "" //token_or_secret
 FirebaseData DB;
 
 String nameDB = "/Users";
-String userId = "/";
+String userId = "/";    //in WaterYourPlants App in main menu/Account Details/User Id  
 String subDB = "/userSensors";
-String sensorId = "/";
+String sensorId = "/";   // in WaterPlants App, create a sensor, click on sensor card
 String sensorMoisture = "/userSensorMoistureCondition";
 String sensorTemperarure = "/userSensorTemperature";
 
