@@ -21,8 +21,8 @@ const int WaterValue = 292; //put your own value
 int intervals = (AirValue - WaterValue) / 3;
 
 // WiFi auth
-#define WIFI_SSID ""   //your Wifi name
-#define WIFI_PASSWORD ""  // your password
+#define WIFI_SSID ""   //your WiFi name
+#define WIFI_PASSWORD ""  // your WiFi password
 
 // Firebase auth
 #define FIREBASE_HOST "" //example.firebaseio.com
@@ -30,9 +30,11 @@ int intervals = (AirValue - WaterValue) / 3;
 FirebaseData DB;
 
 String nameDB = "/Users";
-String userId = "/";    //in WaterYourPlants App in main menu/Account Details/User Id  
+//in WaterYourPlants App in main menu/Account Details/User Id 
+String userId = "/";    
 String subDB = "/userSensors";
-String sensorId = "/";   // in WaterPlants App, create a sensor, click on sensor card
+// in WaterPlants App, create a sensor, click on sensor card
+String sensorId = "/";  
 String sensorMoisture = "/userSensorMoistureCondition";
 String sensorTemperarure = "/userSensorTemperature";
 
