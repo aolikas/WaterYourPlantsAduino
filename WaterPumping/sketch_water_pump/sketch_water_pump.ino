@@ -3,17 +3,19 @@
 #include <FirebaseESP8266.h>
 
 // WiFi auth
-#define WIFI_SSID ""
-#define WIFI_PASSWORD ""
+#define WIFI_SSID "" //your WiFi name
+#define WIFI_PASSWORD "" // your WiFi password
 
 // Firebase auth
-#define FIREBASE_HOST ""
-#define FIREBASE_AUTH ""
+#define FIREBASE_HOST "" //example.firebaseio.com
+#define FIREBASE_AUTH "" //token_or_secret
 FirebaseData DB;
 
 String nameDB = "/Users";
+//in WaterYourPlants App in main menu/Account Details/User Id 
 String userId = "/";
 String subDB = "/userSensors";
+// in WaterPlants App, create a sensor, click on sensor card
 String sensorId = "/";
 String sensorMoisture = "/userSensorMoistureCondition";
 String sensorWateringDuration = "/userSensorPumpWateringDuration";
