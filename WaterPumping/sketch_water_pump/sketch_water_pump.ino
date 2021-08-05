@@ -20,10 +20,16 @@ String sensorId = "/";
 String sensorMoisture = "/userSensorMoistureCondition";
 String sensorWateringDuration = "/userSensorPumpWateringDuration";
 String sensorAutomaticWatering = "/userSensorPumpWateringAutomatic";
+String sensorWatering = "/userSensorPumpWatering";
+String sensorSleepModeTime = "/userSensorSleepModeTime";
+String sensorAutoSleepMode = "/userSensorSleepModeAutomatic";
 
 String moistureCondition = "";
 float wateringDuration;
-boolean wateringAutomatic;
+float sleepModeTime;
+boolean isWateringAutomatic;
+boolean isWatering;
+boolean isAutoSleepMode;
 
 
 void setup() {
@@ -39,11 +45,7 @@ void setup() {
 
   watering();
 
- 
-
-  // sleep mode for 40 secs
-  Serial.println("Going to sleep");
-  ESP.deepSleep(40e6);
+  sendToSleepMode();
  
 }
 
@@ -82,9 +84,23 @@ void connectToWiFi() {
       Serial.println("PASSED");
       Serial.println("------------------------------------");
       Serial.println();
-      wateringAutomatic = DB.boolData();
+      isWateringAutomatic = DB.boolData();
       Serial.print("Automatic watering: ");
-      Serial.println(wateringAutomatic);    
+      Serial.println(isWateringAutomatic);    
+    } else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + DB.errorReason());
+      Serial.println("------------------------------------");
+      Serial.println();
+    }
+
+    if(Firebase.getBool(DB, path + sensorWatering)) {
+      Serial.println("PASSED");
+      Serial.println("------------------------------------");
+      Serial.println();
+      isWatering = DB.boolData();
+      Serial.print("Automatic watering: ");
+      Serial.println(isWatering);    
     } else {
       Serial.println("FAILED");
       Serial.println("REASON: " + DB.errorReason());
@@ -120,36 +136,113 @@ void connectToWiFi() {
       Serial.println("------------------------------------");
       Serial.println();
     }
+
+    if(Firebase.getBool(DB, path + sensorAutoSleepMode)) {
+      Serial.println("PASSED");
+      Serial.println("------------------------------------");
+      Serial.println();
+      isAutoSleepMode = DB.boolData();
+      Serial.print("Auto Sleep Mode is: ");
+      Serial.println(isAutoSleepMode);    
+    } else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + DB.errorReason());
+      Serial.println("------------------------------------");
+      Serial.println();
+    }
+
+    if(Firebase.getFloat(DB, path + sensorSleepModeTime)) {
+      Serial.println("PASSED");
+      Serial.println("------------------------------------");
+      Serial.println();
+      sleepModeTime = DB.floatData();
+      Serial.print("Sleep Mode Time is: ");
+      Serial.println(sleepModeTime);    
+    } else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + DB.errorReason());
+      Serial.println("------------------------------------");
+      Serial.println();
+    }
+
  }
 
  void watering() {
-  if(wateringAutomatic == true) {
-    pumpingAutomatic(moistureCondition);
+  int duration = (int) wateringDuration;
+  if(isWateringAutomatic == true) {
+    pumpingAutomatic(moistureCondition, duration);
   } else {
-    pumpingDuration();
+    pumping(duration);
   }
  }
  
  
- void pumpingAutomatic(String condition) {
+ void pumpingAutomatic(String condition, int duration) {
   Serial.print("Pumping condition ");
   Serial.println(condition);
   if(condition.equals("Dry")){
     Serial.println("Its Dry");
     
       digitalWrite(D5, LOW);
-      delay(10000);
+       delay(duration * 1000);
     }
  }
 
- void pumpingDuration() {
-  int duration = (int) wateringDuration;
+ void pumping(int duration) {
+  if(isWatering == true) {
+     Serial.print("Watering duration ");
+      Serial.println(duration);
 
-  Serial.print("Watering duration ");
-  Serial.println(duration);
+      digitalWrite(D5, LOW);
+      delay(duration * 1000);
+      isWatering = false;
+      sendToDB(isWatering);
+  }
+  
+}
 
-  digitalWrite(D5, LOW);
-  delay(duration * 1000);
+void sendToDB(boolean condition) {
+  //Firebase init
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+  Firebase.reconnectWiFi(true);
+
+  String path = nameDB + userId + subDB + sensorId;
+
+  if (Firebase.setBool(DB, path + sensorWatering, condition)) {
+      Serial.println("PASSED");
+      Serial.println("------------------------------------");
+      Serial.println();
+    }
+    else
+    {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + DB.errorReason());
+      Serial.println("------------------------------------");
+      Serial.println();
+    }
+}
+
+void sendToSleepMode() {
+
+   if(isAutoSleepMode == true) {
+      if(moistureCondition.equals("Dry")) {
+      Serial.println("AutoSleep Mode going to sleep for 20 sec");
+      ESP.deepSleep(20e6);
+      } else {
+      //ESP.deepSleep(ESP.deepSleepMax())
+      Serial.println("AutoSleep Mode going to sleep for 1 hour");
+      ESP.deepSleep(3600e6);
+      }
+   } else {
+     int sleepTime = (int) sleepModeTime;
+   
+      int sleepSec = sleepTime * 60000000; 
+
+     Serial.print("Sleep Mode going to sleep for ");
+     Serial.print(sleepTime);
+     Serial.println(" min");
+     ESP.deepSleep(sleepSec);
+  }
 }
 
 void loop() {}
