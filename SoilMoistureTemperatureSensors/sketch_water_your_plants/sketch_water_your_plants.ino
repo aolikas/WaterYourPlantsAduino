@@ -1,4 +1,3 @@
-
 #include <ESP8266WiFi.h>
 #include <FirebaseESP8266.h>
 #include <OneWire.h>
@@ -8,57 +7,111 @@
 #define ONE_WIRE_BUS 4  //D2 pin of nodemcu
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensorDS(&oneWire);
+//var for Temperature value
 float soilTempValue = 0;
 
 // Soil Humidity
 #define MOISTURE_PIN A0
+//var for Moisture int value 
 int soilMoistureValue = 0;
+//var for Mousture condition
+String soilMoistureCondition = "";
 
 // moisture sensor dry value
-const int AirValue = 627;  //put your own value
+const int AirValue = 644;  //put your own value
 // moisture sensor wet value
-const int WaterValue = 292; //put your own value
+const int WaterValue = 282; //put your own value
 int intervals = (AirValue - WaterValue) / 3;
 
 // WiFi auth
-#define WIFI_SSID ""   //your WiFi name
-#define WIFI_PASSWORD ""  // your WiFi password
+#define WIFI_SSID ""   //your Wifi name
+#define WIFI_PASSWORD ""  // your password
 
 // Firebase auth
-#define FIREBASE_HOST "" //example.firebaseio.com
+#define FIREBASE_HOST ""
 #define FIREBASE_AUTH "" //token_or_secret
+
 FirebaseData DB;
 
+//Firebase path
 String nameDB = "/Users";
-//in WaterYourPlants App in main menu/Account Details/User Id 
-String userId = "/";    
+String userId = "/";    //in WaterYourPlants App in main menu/Account Details/User Id  
 String subDB = "/userSensors";
-// in WaterPlants App, create a sensor, click on sensor card
-String sensorId = "/";  
+String sensorId = "/";   // in WaterPlants App, create a sensor, click on sensor card
 String sensorMoisture = "/userSensorMoistureCondition";
 String sensorTemperarure = "/userSensorTemperature";
+String sensorSleepModeTime = "/userSensorSleepModeTime";
+String sensorAutoSleepMode = "/userSensorSleepModeAutomatic";
+
+//vars
+float sleepModeTime;
+boolean isAutoSleepMode;
 
 
 void setup() {
+  
   Serial.begin(115200);
   sensorDS.begin();
 
-   connectToWiFi();
-   sentToRealTime();
+  connectToWiFi();
 
-  // sleep mode for 10 secs
-  Serial.println("Going to sleep");
-  ESP.deepSleep(10e6);
+  //Firebase init
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+  Firebase.reconnectWiFi(true);
+  
+  readFromDB();
+  
+  sendToRealTime();
+
+  sendToSleepMode();
 }
 
 void loop() {}
 
-void sentToRealTime() {
- 
-  //Firebase init
-  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
-  Firebase.reconnectWiFi(true);
+// read data from DB for AutoSleepMode and SleepMode Time
+void readFromDB() {
 
+  Serial.println("Starting to read from DB");
+
+  String path = nameDB + userId + subDB + sensorId;
+
+  if(Firebase.getBool(DB, path + sensorAutoSleepMode)) {
+      Serial.println("PASSED");
+      Serial.println("------------------------------------");
+      Serial.println();
+      isAutoSleepMode = DB.boolData();
+      Serial.print("Auto Sleep Mode is: ");
+      Serial.println(isAutoSleepMode);    
+    } else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + DB.errorReason());
+      Serial.println("------------------------------------");
+      Serial.println();
+    }
+
+    if(Firebase.getFloat(DB, path + sensorSleepModeTime)) {
+      Serial.println("PASSED");
+      Serial.println("------------------------------------");
+      Serial.println();
+      sleepModeTime = DB.floatData();
+      Serial.print("Sleep Mode Time is: ");
+      Serial.println(sleepModeTime);    
+    } else {
+      Serial.println("FAILED");
+      Serial.println("REASON: " + DB.errorReason());
+      Serial.println("------------------------------------");
+      Serial.println();
+    }
+
+  
+}
+
+void sendToRealTime() {
+
+  Serial.println("Starting to send to DB");
+
+   String path = nameDB + userId + subDB + sensorId;
+ 
   //DS sensor init
   sensorDS.requestTemperatures();
   soilTempValue = sensorDS.getTempCByIndex(0);
@@ -67,15 +120,15 @@ void sentToRealTime() {
 
   //Soil sensor init
   soilMoistureValue = analogRead(MOISTURE_PIN);
-  Serial.print(soilMoistureValue);
-  Serial.println(" Moisture Value");
+  Serial.print("Moisture Value is: ");
+  Serial.println(soilMoistureValue);
+ 
+  soilMoistureCondition = getSoilSensorReadings(soilMoistureValue);
+  Serial.print("Moisture Condition is: ");
+  Serial.println(soilMoistureCondition);
 
-  String moistureCondition = getSoilSensorReadings(soilMoistureValue);
-  Serial.print("Condition: ");
-  Serial.println(moistureCondition);
 
-
-    if (Firebase.setString(DB, nameDB + userId + subDB + sensorId + sensorMoisture, moistureCondition)) {
+  if (Firebase.setString(DB, path + sensorMoisture, soilMoistureCondition)) {
       Serial.println("PASSED");
       Serial.println("------------------------------------");
       Serial.println();
@@ -88,7 +141,7 @@ void sentToRealTime() {
       Serial.println();
     }
 
-    if (Firebase.setFloat(DB, nameDB + userId + subDB + sensorId + sensorTemperarure, soilTempValue)) {
+    if (Firebase.setFloat(DB, path + sensorTemperarure, soilTempValue)) {
       Serial.println("PASSED");
       Serial.println("------------------------------------");
       Serial.println();
@@ -99,10 +152,7 @@ void sentToRealTime() {
       Serial.println("REASON: " + DB.errorReason());
       Serial.println("------------------------------------");
       Serial.println();
-    }
-
-  
-  
+    }  
 }
 
 void connectToWiFi() {
@@ -130,7 +180,7 @@ void connectToWiFi() {
 
  String getSoilSensorReadings(int sensorData) {
 
-  String condition = "";
+ String condition = "";
 
   if(sensorData > WaterValue && 
   sensorData < (WaterValue + intervals)) {
@@ -144,4 +194,27 @@ void connectToWiFi() {
   }
 
   return condition;
+}
+
+void sendToSleepMode() {
+
+   if(isAutoSleepMode == true) {
+      if(soilMoistureCondition.equals("Dry") || soilTempValue > 36.0) {
+      Serial.println("AutoSleep Mode going to sleep for 20 sec");
+      ESP.deepSleep(20e6);
+      } else {
+      //ESP.deepSleep(ESP.deepSleepMax())
+      Serial.println("AutoSleep Mode going to sleep for 1 hour");
+      ESP.deepSleep(3600e6);
+      }
+   } else {
+     int sleepTime = (int) sleepModeTime;
+   
+      int sleepSec = sleepTime * 60000000; 
+
+     Serial.print("Sleep Mode going to sleep for ");
+     Serial.print(sleepTime);
+     Serial.println(" min");
+     ESP.deepSleep(sleepSec);
+  }
 }
